@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistema de Correção de Gabarito</title>
+  <title>Sistema de Correção de Gabarito Real (OpenCV.js)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -20,7 +20,7 @@
       border-radius: 8px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-    h1, h2, h3 {
+    h1, h2 {
       text-align: center;
       color: #2c3e50;
     }
@@ -38,9 +38,7 @@
       border-radius: 6px;
       background: #ecf0f1;
     }
-    input[type="file"] {
-      display: none;
-    }
+    input[type="file"] { display: none; }
     .btn {
       background-color: #3498db;
       color: white;
@@ -51,20 +49,14 @@
       font-size: 16px;
       margin: 5px;
     }
-    .btn:hover {
-      background-color: #2980b9;
-    }
-    .btn-sucesso {
-      background-color: #2ecc71;
-    }
-    .btn-sucesso:hover {
-      background-color: #27ae60;
-    }
+    .btn:hover { background-color: #2980b9; }
+    .btn-sucesso { background-color: #2ecc71; }
+    .btn-sucesso:hover { background-color: #27ae60; }
     .grid-gabarito {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
       gap: 10px;
-      max-height: 300px;
+      max-height: 250px;
       overflow-y: auto;
       padding: 10px;
       border: 1px solid #ddd;
@@ -77,17 +69,10 @@
       align-items: center;
       font-size: 14px;
     }
-    .item-gabarito select {
-      margin-top: 4px;
-      padding: 4px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-    }
-    #preview-img {
+    #preview-img, #canvasOutput {
       max-width: 100%;
-      max-height: 300px;
+      max-height: 350px;
       margin-top: 15px;
-      display: none;
       border-radius: 4px;
     }
     table {
@@ -100,44 +85,38 @@
       padding: 10px;
       text-align: left;
     }
-    th {
-      background-color: #2c3e50;
-      color: white;
-    }
-    tr:nth-child(even) {
-      background-color: #f9f9f9;
-    }
-    .total-row {
-      font-weight: bold;
-      background-color: #eaedd0 !important;
-    }
-    .hidden {
-      display: none;
-    }
+    th { background-color: #2c3e50; color: white; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    .total-row { font-weight: bold; background-color: #eaedd0 !important; }
+    .hidden { display: none; }
     .materia-header {
       grid-column: 1 / -1;
       font-weight: bold;
       color: #2c3e50;
       margin-top: 10px;
       border-bottom: 1px solid #ccc;
-      padding-bottom: 2px;
+    }
+    #status-opencv {
+      text-align: center;
+      font-weight: bold;
+      color: #e67e22;
+      margin-bottom: 15px;
     }
   </style>
+
+  <!-- Carregamento do OpenCV.js -->
+  <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
 </head>
 <body>
 
 <div class="container">
-  <h1>Correção de Gabarito</h1>
+  <h1>Correção de Gabarito (Processamento Real)</h1>
+  <div id="status-opencv">Carregando mecanismo de visão computacional (OpenCV.js)...</div>
 
   <!-- Cadastro de Gabarito Oficial -->
   <div class="box">
     <h2>1. Cadastrar Gabarito Oficial</h2>
-    <p>Selecione a resposta correta para cada uma das 65 questões:</p>
-    
-    <div id="grid-gabarito-oficial" class="grid-gabarito">
-      <!-- Gerado via JavaScript -->
-    </div>
-    
+    <div id="grid-gabarito-oficial" class="grid-gabarito"></div>
     <div style="text-align: center; margin-top: 15px;">
       <button class="btn btn-sucesso" onclick="salvarGabaritoOficial()">Salvar Gabarito Oficial</button>
     </div>
@@ -145,19 +124,20 @@
 
   <!-- Área de Captura / Upload -->
   <div class="upload-section">
-    <h2>2. Enviar Folha de Resposta</h2>
-    <p>Selecione a imagem do gabarito ou tire uma foto:</p>
+    <h2>2. Enviar Imagem Real do Gabarito</h2>
+    <p>Selecione a imagem ou tire uma foto bem iluminada:</p>
     <label for="fotoGabarito" class="btn">Escolher Imagem / Capturar</label>
     <input type="file" id="fotoGabarito" accept="image/*" capture="environment" onchange="carregarImagem(event)">
     <br>
-    <img id="preview-img" alt="Pré-visualização do Gabarito">
+    <img id="preview-img" alt="Pré-visualização do Gabarito" style="display:none;">
+    <canvas id="canvasOutput" style="display:none;"></canvas>
     <br><br>
-    <button class="btn" onclick="corrigirGabarito()" id="btnCorrigir" style="display:none;">Corrigir Gabarito</button>
+    <button class="btn" onclick="corrigirGabaritoReal()" id="btnCorrigir" style="display:none;" disabled>Aguardando OpenCV...</button>
   </div>
 
   <!-- Resultado da Correção -->
   <div id="resultado" class="hidden">
-    <h2>Relatório de Desempenho</h2>
+    <h2>Relatório de Desempenho Real</h2>
     <table>
       <thead>
         <tr>
@@ -167,14 +147,25 @@
           <th>Aproveitamento</th>
         </tr>
       </thead>
-      <tbody id="tabela-resultados">
-      </tbody>
+      <tbody id="tabela-resultados"></tbody>
     </table>
   </div>
 </div>
 
 <script>
-  // Regras de mapeamento das disciplinas (Questão Inicio, Questão Fim)
+  let cvReady = false;
+
+  function onOpenCvReady() {
+    cvReady = true;
+    const status = document.getElementById('status-opencv');
+    status.innerText = "Mecanismo OpenCV.js pronto para uso!";
+    status.style.color = "#2ecc71";
+    
+    const btn = document.getElementById('btnCorrigir');
+    btn.innerText = "Corrigir Gabarito Real";
+    btn.disabled = false;
+  }
+
   const REGRAS_DISCIPLINAS = {
     "Português": [1, 5],
     "Inglês": [6, 10],
@@ -194,24 +185,19 @@
   const OPCIONAL_LETRAS = ['A', 'B', 'C', 'D', 'E'];
   let GABARITO_OFICIAL = {};
 
-  // Função para renderizar os campos de cadastro do gabarito oficial agrupados por matéria
   function renderizarFormularioGabarito() {
     const gridContainer = document.getElementById('grid-gabarito-oficial');
     gridContainer.innerHTML = '';
 
     for (const [materia, [inicio, fim]] of Object.entries(REGRAS_DISCIPLINAS)) {
-      // Cabeçalho da matéria
       const header = document.createElement('div');
       header.className = 'materia-header';
       header.innerText = `${materia} (Q${inicio} a Q${fim})`;
       gridContainer.appendChild(header);
 
-      // Questões da matéria
       for (let q = inicio; q <= fim; q++) {
         const item = document.createElement('div');
         item.className = 'item-gabarito';
-        
-        // Define uma opção padrão inicial (ex: A, B, C, D, E alternados)
         const opcaoPadrao = OPCIONAL_LETRAS[(q - 1) % 5];
         GABARITO_OFICIAL[q] = opcaoPadrao;
 
@@ -228,18 +214,14 @@
     }
   }
 
-  // Função para salvar as escolhas do Gabarito Oficial
   function salvarGabaritoOficial() {
     for (let i = 1; i <= 65; i++) {
       const select = document.getElementById(`q-oficial-${i}`);
-      if (select) {
-        GABARITO_OFICIAL[i] = select.value;
-      }
+      if (select) GABARITO_OFICIAL[i] = select.value;
     }
     alert('Gabarito Oficial salvo com sucesso!');
   }
 
-  // Pré-visualização da Imagem
   function carregarImagem(event) {
     const input = event.target;
     if (input.files && input.files[0]) {
@@ -254,19 +236,82 @@
     }
   }
 
-  // Simulação da leitura das respostas do aluno
-  function lerRespostasAluno() {
-    const respostas = {};
-    for (let i = 1; i <= 65; i++) {
-      // Simula a leitura das respostas para teste
-      respostas[i] = (i % 8 === 0) ? 'A' : GABARITO_OFICIAL[i];
+  // ALGORITMO REAL DE LEITURA ÓPTICA (OMR) COM OPENCV
+  function processarImagemRealOMR() {
+    if (!cvReady) {
+      alert("Aguarde a biblioteca OpenCV.js carregar totalmente.");
+      return null;
     }
-    return respostas;
+
+    const imgElement = document.getElementById('preview-img');
+    let src = cv.imread(imgElement);
+    let gray = new cv.Mat();
+    let thresh = new cv.Mat();
+
+    // 1. Converter para Escala de Cinza
+    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+
+    // 2. Aplicar Binarização (Threshold Inverso: marcas escuras ficam BRANCAS para contagem)
+    cv.threshold(gray, thresh, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
+
+    const respostasDetectadas = {};
+
+    // Mapeamento em grade 65 questões x 5 alternativas (A, B, C, D, E)
+    const larguraImg = thresh.cols;
+    const alturaImg = thresh.rows;
+
+    // Considera a área útil central da imagem
+    const margemX = larguraImg * 0.1;
+    const margemY = alturaImg * 0.1;
+    const larguraUtil = larguraImg - (2 * margemX);
+    const alturaUtil = alturaImg - (2 * margemY);
+
+    const alturaLinha = alturaUtil / 65;
+    const larguraColuna = larguraUtil / 5;
+
+    // Threshold mínimo de pixels para considerar como marcado
+    const limiteMinimoPixels = (alturaLinha * larguraColuna) * 0.20;
+
+    for (let q = 1; q <= 65; q++) {
+      let maiorDensidade = 0;
+      let alternativaMarcada = null;
+
+      const yInicio = Math.floor(margemY + ((q - 1) * alturaLinha));
+      const alturaRegiao = Math.floor(alturaLinha);
+
+      for (let col = 0; col < 5; col++) {
+        const xInicio = Math.floor(margemX + (col * larguraColuna));
+        const larguraRegiao = Math.floor(larguraColuna);
+
+        // Corta a Região de Interesse (ROI) de cada alternativa
+        let rect = new cv.Rect(xInicio, yInicio, larguraRegiao, alturaRegiao);
+        let roi = thresh.roi(rect);
+
+        // Conta a quantidade de pixels marcados (brancos após binarização)
+        let pixelsMarcados = cv.countNonZero(roi);
+        roi.delete();
+
+        if (pixelsMarcados > maiorDensidade && pixelsMarcados > limiteMinimoPixels) {
+          maiorDensidade = pixelsMarcados;
+          alternativaMarcada = OPCIONAL_LETRAS[col];
+        }
+      }
+
+      respostasDetectadas[q] = alternativaMarcada; // Se não marcou nada, fica null
+    }
+
+    // Libera memória C++ alocada pelo OpenCV.js
+    src.delete();
+    gray.delete();
+    thresh.delete();
+
+    return respostasDetectadas;
   }
 
-  // Função principal de Correção
-  function corrigirGabarito() {
-    const respostasAluno = lerRespostasAluno();
+  function corrigirGabaritoReal() {
+    const respostasAluno = processarImagemRealOMR();
+    if (!respostasAluno) return;
+
     const tabelaCorpo = document.getElementById('tabela-resultados');
     tabelaCorpo.innerHTML = '';
 
@@ -278,7 +323,11 @@
       const totalMateria = (fim - inicio) + 1;
 
       for (let q = inicio; q <= fim; q++) {
-        if (respostasAluno[q] && respostasAluno[q] === GABARITO_OFICIAL[q]) {
+        const respAluno = respostasAluno[q];
+        const respOficial = GABARITO_OFICIAL[q];
+
+        // Só ganha ponto se a alternativa marcada na imagem for EXATAMENTE a do Gabarito Oficial
+        if (respAluno && respAluno === respOficial) {
           pontosMateria++;
         }
       }
@@ -310,7 +359,6 @@
     document.getElementById('resultado').classList.remove('hidden');
   }
 
-  // Inicializa o formulário de cadastro ao carregar a página
   window.onload = renderizarFormularioGabarito;
 </script>
 
