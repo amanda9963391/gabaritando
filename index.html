@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Correção de Gabarito</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f7f6;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    .upload-section {
+      border: 2px dashed #3498db;
+      padding: 20px;
+      text-align: center;
+      border-radius: 6px;
+      background: #ecf0f1;
+      margin-bottom: 20px;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    .btn {
+      background-color: #3498db;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    .btn:hover {
+      background-color: #2980b9;
+    }
+    #preview-img {
+      max-width: 100%;
+      max-height: 300px;
+      margin-top: 15px;
+      display: none;
+      border-radius: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #2c3e50;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    .total-row {
+      font-weight: bold;
+      background-color: #eaedd0 !important;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Correção de Gabarito</h1>
+
+  <!-- Área de Captura / Upload -->
+  <div class="upload-section">
+    <p>Selecione a imagem do gabarito ou tire uma foto:</p>
+    <label for="fotoGabarito" class="btn">Escolher Imagem / Capturar</label>
+    <input type="file" id="fotoGabarito" accept="image/*" capture="environment" onchange="carregarImagem(event)">
+    <br>
+    <img id="preview-img" alt="Pré-visualização do Gabarito">
+    <br><br>
+    <button class="btn" onclick="corrigirGabarito()" id="btnCorrigir" style="display:none;">Corrigir Gabarito</button>
+  </div>
+
+  <!-- Resultado da Correção -->
+  <div id="resultado" class="hidden">
+    <h2>Relatório de Desempenho</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Disciplina</th>
+          <th>Questões</th>
+          <th>Pontuação</th>
+          <th>Aproveitamento</th>
+        </tr>
+      </thead>
+      <tbody id="tabela-resultados">
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Regras de mapeamento das disciplinas (Questão Inicio, Questão Fim)
+  const REGRAS_DISCIPLINAS = {
+    "Português": [1, 5],
+    "Inglês": [6, 10],
+    "Educação Física": [11, 15],
+    "Artes": [16, 20],
+    "Matemática": [21, 25],
+    "Biologia": [26, 30],
+    "Física": [31, 35],
+    "Química": [36, 40],
+    "História": [41, 45],
+    "Geografia": [46, 50],
+    "Sociologia": [51, 55],
+    "Filosofia": [56, 60],
+    "Informática": [61, 65]
+  };
+
+  // Gabarito Oficial Exemplo (Questão: Resposta Correta)
+  const GABARITO_OFICIAL = {};
+  const opcoes = ['A', 'B', 'C', 'D', 'E'];
+  for (let i = 1; i <= 65; i++) {
+    GABARITO_OFICIAL[i] = opcoes[(i % 5)]; // Preenche com padrão A, B, C, D, E
+  }
+
+  // Pré-visualização da Imagem
+  function carregarImagem(event) {
+    const input = event.target;
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = document.getElementById('preview-img');
+        img.src = e.target.result;
+        img.style.display = 'block';
+        document.getElementById('btnCorrigir').style.display = 'inline-block';
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  // Simulação da leitura das respostas do aluno (Substituir por chamada de API/OpenCV se necessário)
+  function lerRespostasAluno() {
+    const respostas = {};
+    for (let i = 1; i <= 65; i++) {
+      // Simula algumas respostas do aluno (acertando a maioria para teste)
+      respostas[i] = (i % 7 === 0) ? 'A' : GABARITO_OFICIAL[i];
+    }
+    return respostas;
+  }
+
+  // Função principal de Correção
+  function corrigirGabarito() {
+    const respostasAluno = lerRespostasAluno();
+    const tabelaCorpo = document.getElementById('tabela-resultados');
+    tabelaCorpo.innerHTML = '';
+
+    let pontosTotais = 0;
+    let totalQuestoesGeral = 65;
+
+    for (const [materia, [inicio, fim]] of Object.entries(REGRAS_DISCIPLINAS)) {
+      let pontosMateria = 0;
+      const totalMateria = (fim - inicio) + 1;
+
+      for (let q = inicio; q <= fim; q++) {
+        if (respostasAluno[q] && respostasAluno[q] === GABARITO_OFICIAL[q]) {
+          pontosMateria++;
+        }
+      }
+
+      pontosTotais += pontosMateria;
+      const aproveitamento = ((pontosMateria / totalMateria) * 100).toFixed(1);
+
+      // Adiciona linha na tabela para a matéria
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${materia}</td>
+        <td>Questões ${inicio} a ${fim} (${totalMateria})</td>
+        <td>${pontosMateria} / ${totalMateria}</td>
+        <td>${aproveitamento}%</td>
+      `;
+      tabelaCorpo.appendChild(tr);
+    }
+
+    // Adiciona linha do Total Geral
+    const aproveitamentoGeral = ((pontosTotais / totalQuestoesGeral) * 100).toFixed(1);
+    const trTotal = document.createElement('tr');
+    trTotal.className = 'total-row';
+    trTotal.innerHTML = `
+      <td><strong>TOTAL GERAL</strong></td>
+      <td>65 Questões</td>
+      <td><strong>${pontosTotais} / ${totalQuestoesGeral}</strong></td>
+      <td><strong>${aproveitamentoGeral}%</strong></td>
+    `;
+    tabelaCorpo.appendChild(trTotal);
+
+    // Exibe o painel de resultados
+    document.getElementById('resultado').classList.remove('hidden');
+  }
+</script>
+
+</body>
+</html>
